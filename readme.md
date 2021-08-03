@@ -11,6 +11,11 @@ This notebook will teach you about:
 
 You will learn to perform document alignment using the above techniques.
 
+### Input
+
+<img src = 'inputs/img.png'>
+<img src = 'inputs/ref.png'>
+
 ### Outputs:
 
 <img src = 'outputs/matchesORB.jpg'>
@@ -30,6 +35,10 @@ This notebook will teach you about:
 * Perspective Transform
 
 You will learn to perform document alignment using the above techniques.
+
+### Input
+
+<img src = 'inputs/img.png'>
 
 ### Output:
 
