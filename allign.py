@@ -73,7 +73,8 @@ def scan(img):
     # Crop
     final = un_warped[:destination_corners[2][1], :destination_corners[2][0]]
     return final
-img = cv2.imread('inputs/img10.jpg', cv2.IMREAD_COLOR)
+img = cv2.imread('inputs/scanned-form.jpg', cv2.IMREAD_COLOR)
 scanned = scan(img)
+cv2.imwrite('outputs/aligned.jpg', scanned)
 cv2.imshow('scanned', scanned)
 cv2.waitKey(0)
