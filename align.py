@@ -86,5 +86,5 @@ for img_path in glob.glob('inputs/*.jpg'):
 
         cv2.imwrite('outputs/'+img_path.split('/')[-1], scan(img))
     except:
-        print(img_path, 'fail')
+        print('fail')
     

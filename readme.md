@@ -19,7 +19,7 @@ You will learn to perform document alignment using the above techniques.
 ### Output:
 
 
-<img src = 'outputs/aligned.jpg'>
+<img src = 'grabcutop/aligned.jpg'>
 
 
 ## Document_alignment_with reference.ipynb
