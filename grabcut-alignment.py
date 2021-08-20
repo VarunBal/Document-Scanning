@@ -23,6 +23,8 @@ def order_points(pts):
 
 
 def scan(img):
+    if max(img.shape) > 512:
+        img = cv2.resize(img, None, fx=0.5, fy=0.5)
     orig_img = img.copy()
     # Repeated Closing operation to remove text from the document.
     kernel = np.ones((5,5),np.uint8)
@@ -31,7 +33,7 @@ def scan(img):
     mask = np.zeros(img.shape[:2],np.uint8)
     bgdModel = np.zeros((1,65),np.float64)
     fgdModel = np.zeros((1,65),np.float64)
-    rect = (10,10,img.shape[1]-10,img.shape[0]-10)
+    rect = (20,20,img.shape[1]-20,img.shape[0]-20)
     cv2.grabCut(img,mask,rect,bgdModel,fgdModel,5,cv2.GC_INIT_WITH_RECT)
     mask2 = np.where((mask==2)|(mask==0),0,1).astype('uint8')
     img = img*mask2[:,:,np.newaxis]
@@ -47,15 +49,15 @@ def scan(img):
     # Keeping only the largest detected contour.
     page = sorted(contours, key=cv2.contourArea, reverse=True)[:5]
 
-    # Detecting Edges through Contour approximation
-    # loop over the contours
+    # Detecting Edges through Contour approximation.
+    # Loop over the contours.
     if len(page) == 0:
         return orig_img
     for c in page:
-        # approximate the contour
+        # Approximate the contour.
         epsilon = 0.02 * cv2.arcLength(c, True)
         corners = cv2.approxPolyDP(c, epsilon, True)
-        # if our approximated contour has four points
+        # If our approximated contour has four points.
         if len(corners) == 4:
             break
     # Sorting the corners and converting them to desired shape.
@@ -64,35 +66,50 @@ def scan(img):
     # Rearranging the order of the corner points.
     corners = order_points(corners)
     
-    # Finding Destination Co-ordinates
-    w1 = np.sqrt((corners[0][0] - corners[1][0]) ** 2 + (corners[0][1] - corners[1][1]) ** 2)
-    w2 = np.sqrt((corners[2][0] - corners[3][0]) ** 2 + (corners[2][1] - corners[3][1]) ** 2)
+    (tl, tr, br, bl) = corners
     # Finding the maximum width.
-    w = max(int(w1), int(w2))
+    widthA = np.sqrt(((br[0] - bl[0]) ** 2) + ((br[1] - bl[1]) ** 2))
+    widthB = np.sqrt(((tr[0] - tl[0]) ** 2) + ((tr[1] - tl[1]) ** 2))
+    maxWidth = max(int(widthA), int(widthB))
 
-    h1 = np.sqrt((corners[0][0] - corners[2][0]) ** 2 + (corners[0][1] - corners[2][1]) ** 2)
-    h2 = np.sqrt((corners[1][0] - corners[3][0]) ** 2 + (corners[1][1] - corners[3][1]) ** 2)   
     # Finding the maximum height.
-    h = max(int(h1), int(h2))
-
+    heightA = np.sqrt(((tr[0] - br[0]) ** 2) + ((tr[1] - br[1]) ** 2))
+    heightB = np.sqrt(((tl[0] - bl[0]) ** 2) + ((tl[1] - bl[1]) ** 2))
+    maxHeight = max(int(heightA), int(heightB))
     # Final destination co-ordinates.
-    destination_corners = order_points(np.array([[0, 0], [w - 1, 0], [0, h - 1], [w - 1, h - 1]]))
+    destination_corners = [[0, 0], [maxWidth - 1, 0], [maxWidth - 1, maxHeight - 1], [0, maxHeight - 1]]
     
     h, w = orig_img.shape[:2]
     # Getting the homography.
-    homography, mask = cv2.findHomography(np.float32(corners), np.float32(destination_corners), method=cv2.RANSAC, ransacReprojThreshold=3.0)
+    M = cv2.getPerspectiveTransform(np.float32(corners), np.float32(destination_corners))
     # Perspective transform using homography.
-    un_warped = cv2.warpPerspective(orig_img, np.float32(homography), (w, h), flags=cv2.INTER_LINEAR)
+    un_warped = cv2.warpPerspective(orig_img, M, (w, h), flags=cv2.INTER_LINEAR)
     # Crop
     final = un_warped[:destination_corners[2][1], :destination_corners[2][0]]
     return final
 
-
+'''
 import glob
-
+import time
+runtime = []
 for img_path in glob.glob('inputs/*.jpg'):
     img = cv2.imread(img_path)
     print(img_path)
+    t1 = time.time()
+    scanned = scan(img)
+    t2 = time.time()
+    runtime.append({'image' : img_path, 'time' : t2-t1})
+    cv2.imwrite('grabcutop/'+img_path.split('/')[-1], scanned)
+print(runtime)
 
-    cv2.imwrite('grabcutop/'+img_path.split('/')[-1], scan(img))
-    
+import csv
+csv_columns = ['image', 'time']
+with open('time.csv', 'w') as f:  
+    writer = csv.DictWriter(f, fieldnames=csv_columns)
+    writer.writeheader()
+    for data in runtime:
+        writer.writerow(data)'''
+img = cv2.imread('inputs/img8.jpg')
+
+scanned = scan(img)
+cv2.imwrite('grabcutop/img8.jpg', scanned)
