@@ -47,15 +47,18 @@ def find_dest(pts):
     heightB = np.sqrt(((tl[0] - bl[0]) ** 2) + ((tl[1] - bl[1]) ** 2))
     maxHeight = max(int(heightA), int(heightB))
     # Final destination co-ordinates.
-    destination_corners = [[0, 0], [maxWidth - 1, 0], [maxWidth - 1, maxHeight - 1], [0, maxHeight - 1]]
+    destination_corners = [[0, 0], [maxWidth, 0], [maxWidth, maxHeight], [0, maxHeight]]
     
     return order_points(destination_corners)
 
 
 
 def scan(img):
-    if max(img.shape) > 1080:
-        img = cv2.resize(img, None, fx=0.5, fy=0.5)
+    dim_limit = 1080
+    max_dim = max(img.shape)
+    if max_dim > dim_limit:
+        resize_scale = dim_limit / max_dim
+        img = cv2.resize(img, None, fx=resize_scale, fy=resize_scale)
     orig_img = img.copy()
     # Repeated Closing operation to remove text from the document.
     kernel = np.ones((5,5),np.uint8)
@@ -69,7 +72,7 @@ def scan(img):
     mask2 = np.where((mask==2)|(mask==0),0,1).astype('uint8')
     img = img*mask2[:,:,np.newaxis]
     
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2BGRA)
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     gray = cv2.GaussianBlur(gray, (11, 11), 0)
     # Edge Detection.
     canny = cv2.Canny(gray, 0, 200)
@@ -102,9 +105,7 @@ def scan(img):
     # Getting the homography.
     M = cv2.getPerspectiveTransform(np.float32(corners), np.float32(destination_corners))
     # Perspective transform using homography.
-    un_warped = cv2.warpPerspective(orig_img, M, (w, h), flags=cv2.INTER_LINEAR)
-    # Crop
-    final = un_warped[:destination_corners[2][1], :destination_corners[2][0]]
+    final = cv2.warpPerspective(orig_img, M, (destination_corners[2][0], destination_corners[2][1]), flags=cv2.INTER_LINEAR)
     return final
 
 # Generating a link to download a particular image file.
@@ -164,9 +165,7 @@ if uploaded_file is not None:
             # Getting the homography.
             M = cv2.getPerspectiveTransform(np.float32(points), np.float32(dest))
             # Perspective transform using homography.
-            un_warped = cv2.warpPerspective(image, M, (w, h), flags=cv2.INTER_LINEAR)
-            # Crop
-            final = un_warped[:dest[2][1], :dest[2][0]]
+            final = cv2.warpPerspective(image, M, (dest[2][0], dest[2][1]), flags=cv2.INTER_LINEAR)
             st.image(final, channels='BGR', use_column_width=True)
     else:
         with col1:
