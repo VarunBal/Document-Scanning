@@ -1,6 +1,8 @@
 import cv2
 import numpy as np
 import glob
+import time
+import csv
 
 
 def order_points(pts):
@@ -114,34 +116,19 @@ def scan(img):
     return final
 
 
-'''
-import glob
-import time
 runtime = []
-for img_path in glob.glob('inputs/*.jpg'):
-    img = cv2.imread(img_path)
-    print(img_path)
-    t1 = time.time()
-    scanned = scan(img)
-    t2 = time.time()
-    runtime.append({'image' : img_path, 'time' : t2-t1})
-    cv2.imwrite('grabcutop/'+img_path.split('/')[-1], scanned)
-print(runtime)
-
-import csv
-csv_columns = ['image', 'time']
-with open('time.csv', 'w') as f:  
-    writer = csv.DictWriter(f, fieldnames=csv_columns)
-    writer.writeheader()
-    for data in runtime:
-        writer.writerow(data)'''
-
 for img_path in glob.glob('inputs/*.jpg'):
     try:
         img = cv2.imread(img_path)
         print(img_path)
 
+        t1 = time.time()
+
         scanned_img = scan(img)
+
+        t2 = time.time()
+
+        runtime.append({'image': img_path, 'time': t2 - t1})
 
         # cv2.imshow("scanner", scanned_img)
         cv2.imwrite('grabcutop/' + img_path.split('/')[-1], scanned_img)
@@ -152,5 +139,12 @@ for img_path in glob.glob('inputs/*.jpg'):
             break
     except:
         print('fail')
+
+csv_columns = ['image', 'time']
+with open('time.csv', 'w') as f:
+    writer = csv.DictWriter(f, fieldnames=csv_columns)
+    writer.writeheader()
+    for data in runtime:
+        writer.writerow(data)
 
 cv2.destroyAllWindows()
