@@ -4,42 +4,43 @@ import glob
 
 
 def order_points(pts):
-	'''Rearrange coordinates to order:
+    '''Rearrange coordinates to order:
        top-left, top-right, bottom-right, bottom-left'''
-	rect = np.zeros((4, 2), dtype='float32')
-	pts = np.array(pts)
-	s = pts.sum(axis=1)
-	# Top-left point will have the smallest sum.
-	rect[0] = pts[np.argmin(s)]
+    rect = np.zeros((4, 2), dtype='float32')
+    pts = np.array(pts)
+    s = pts.sum(axis=1)
+    # Top-left point will have the smallest sum.
+    rect[0] = pts[np.argmin(s)]
     # Bottom-right point will have the largest sum.
-	rect[2] = pts[np.argmax(s)]
+    rect[2] = pts[np.argmax(s)]
 
-	diff = np.diff(pts, axis=1)
+    diff = np.diff(pts, axis=1)
     # Top-right point will have the smallest difference.
-	rect[1] = pts[np.argmin(diff)]
+    rect[1] = pts[np.argmin(diff)]
     # Bottom-left will have the largest difference.
-	rect[3] = pts[np.argmax(diff)]
-	# return the ordered coordinates
-	return rect.astype('int').tolist()
+    rect[3] = pts[np.argmax(diff)]
+    # return the ordered coordinates
+    return rect.astype('int').tolist()
 
 
 def scan(img):
-
+    # Resize image to workable size
     dim_limit = 1080
     max_dim = max(img.shape)
     if max_dim > dim_limit:
-        resize_scale = dim_limit/max_dim
+        resize_scale = dim_limit / max_dim
         img = cv2.resize(img, None, fx=resize_scale, fy=resize_scale)
 
+    # Create a copy of resized original image for later use
     orig_img = img.copy()
     # Repeated Closing operation to remove text from the document.
-    kernel = np.ones((5,5),np.uint8)
-    img = cv2.morphologyEx(img, cv2.MORPH_CLOSE, kernel, iterations= 5)
+    kernel = np.ones((5, 5), np.uint8)
+    img = cv2.morphologyEx(img, cv2.MORPH_CLOSE, kernel, iterations=5)
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     gray = cv2.GaussianBlur(gray, (11, 11), 0)
     # Edge Detection.
     canny = cv2.Canny(gray, 0, 200)
-    canny = cv2.dilate(canny, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(21,21)))
+    canny = cv2.dilate(canny, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (21, 21)))
 
     # Finding contours for the detected edges.
     contours, hierarchy = cv2.findContours(canny, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
@@ -79,7 +80,8 @@ def scan(img):
 
     h, w = orig_img.shape[:2]
     # Getting the homography.
-    homography, mask = cv2.findHomography(np.float32(corners), np.float32(destination_corners), method=cv2.RANSAC, ransacReprojThreshold=3.0)
+    homography, mask = cv2.findHomography(np.float32(corners), np.float32(destination_corners), method=cv2.RANSAC,
+                                          ransacReprojThreshold=3.0)
     # Perspective transform using homography.
     un_warped = cv2.warpPerspective(orig_img, np.float32(homography), (w, h), flags=cv2.INTER_LINEAR)
     # Crop
@@ -95,7 +97,7 @@ for img_path in glob.glob('inputs/*.jpg'):
         scanned_img = scan(img)
 
         # cv2.imshow("scanner", scanned_img)
-        cv2.imwrite('outputs/'+img_path.split('/')[-1], scanned_img)
+        cv2.imwrite('outputs/' + img_path.split('/')[-1], scanned_img)
         print("scanned")
 
         key = cv2.waitKey(0)

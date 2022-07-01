@@ -2,51 +2,52 @@ import cv2
 import numpy as np
 import glob
 
-def order_points(pts):
-	'''Rearrange coordinates to order: 
-       top-left, top-right, bottom-right, bottom-left'''
-	rect = np.zeros((4, 2), dtype='float32')
-	pts = np.array(pts)
-	s = pts.sum(axis=1)
-	# Top-left point will have the smallest sum.
-	rect[0] = pts[np.argmin(s)]
-    # Bottom-right point will have the largest sum.
-	rect[2] = pts[np.argmax(s)]
-	
-	diff = np.diff(pts, axis=1)
-    # Top-right point will have the smallest difference.
-	rect[1] = pts[np.argmin(diff)]
-    # Bottom-left will have the largest difference.
-	rect[3] = pts[np.argmax(diff)]
-	# return the ordered coordinates
-	return rect.astype('int').tolist()
 
+def order_points(pts):
+    """Rearrange coordinates to order:
+       top-left, top-right, bottom-right, bottom-left"""
+    rect = np.zeros((4, 2), dtype='float32')
+    pts = np.array(pts)
+    s = pts.sum(axis=1)
+    # Top-left point will have the smallest sum.
+    rect[0] = pts[np.argmin(s)]
+    # Bottom-right point will have the largest sum.
+    rect[2] = pts[np.argmax(s)]
+
+    diff = np.diff(pts, axis=1)
+    # Top-right point will have the smallest difference.
+    rect[1] = pts[np.argmin(diff)]
+    # Bottom-left will have the largest difference.
+    rect[3] = pts[np.argmax(diff)]
+    # return the ordered coordinates
+    return rect.astype('int').tolist()
 
 
 def scan(img):
-
+    # Resize image to workable size
     dim_limit = 1080
     max_dim = max(img.shape)
     if max_dim > dim_limit:
-        resize_scale = dim_limit/max_dim
+        resize_scale = dim_limit / max_dim
         img = cv2.resize(img, None, fx=resize_scale, fy=resize_scale)
 
+    # Create a copy of resized original image for later use
     orig_img = img.copy()
     # cv2.imshow("original_resized", orig_img)
 
     # Repeated Closing operation to remove text from the document.
-    kernel = np.ones((5,5),np.uint8)
-    img = cv2.morphologyEx(img, cv2.MORPH_CLOSE, kernel, iterations= 3)
+    kernel = np.ones((5, 5), np.uint8)
+    img = cv2.morphologyEx(img, cv2.MORPH_CLOSE, kernel, iterations=3)
     # cv2.imshow("morphologyEX", img)
 
     # GrabCut
-    mask = np.zeros(img.shape[:2],np.uint8)
-    bgdModel = np.zeros((1,65),np.float64)
-    fgdModel = np.zeros((1,65),np.float64)
-    rect = (20,20,img.shape[1]-20,img.shape[0]-20)
-    cv2.grabCut(img,mask,rect,bgdModel,fgdModel,5,cv2.GC_INIT_WITH_RECT)
-    mask2 = np.where((mask==2)|(mask==0),0,1).astype('uint8')
-    img = img*mask2[:,:,np.newaxis]
+    mask = np.zeros(img.shape[:2], np.uint8)
+    bgdModel = np.zeros((1, 65), np.float64)
+    fgdModel = np.zeros((1, 65), np.float64)
+    rect = (20, 20, img.shape[1] - 20, img.shape[0] - 20)
+    cv2.grabCut(img, mask, rect, bgdModel, fgdModel, 5, cv2.GC_INIT_WITH_RECT)
+    mask2 = np.where((mask == 2) | (mask == 0), 0, 1).astype('uint8')
+    img = img * mask2[:, :, np.newaxis]
     # cv2.imshow("grabcut", img)
 
     # Convert to grayscale.
@@ -56,9 +57,9 @@ def scan(img):
 
     # Edge Detection.
     canny = cv2.Canny(gray, 0, 200)
-    canny = cv2.dilate(canny, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(5,5)))
+    canny = cv2.dilate(canny, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5)))
     # cv2.imshow("canny_dilate", canny)
-    
+
     # Finding contours for the detected edges.
     contours, hierarchy = cv2.findContours(canny, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
     # Keeping only the largest detected contour.
@@ -84,12 +85,12 @@ def scan(img):
     (tl, tr, br, bl) = corners
 
     # Draw points
-    points_img = cv2.cvtColor(canny,cv2.COLOR_GRAY2BGR)
+    points_img = cv2.cvtColor(canny, cv2.COLOR_GRAY2BGR)
     point_count = 0
     for corner in corners:
-        cv2.circle(points_img,corner,3,(255,0,0),-1)
+        cv2.circle(points_img, corner, 3, (255, 0, 0), -1)
         point_count += 1
-        cv2.putText(points_img,str(point_count),corner,cv2.FONT_HERSHEY_SIMPLEX,1,(0,255,0),2)
+        cv2.putText(points_img, str(point_count), corner, cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
     # cv2.imshow("points", points_img)
 
     # Finding the maximum width.
@@ -111,6 +112,7 @@ def scan(img):
     final = cv2.warpPerspective(orig_img, M, (maxWidth, maxHeight), flags=cv2.INTER_LINEAR)
 
     return final
+
 
 '''
 import glob
@@ -134,7 +136,6 @@ with open('time.csv', 'w') as f:
     for data in runtime:
         writer.writerow(data)'''
 
-
 for img_path in glob.glob('inputs/*.jpg'):
     try:
         img = cv2.imread(img_path)
@@ -143,7 +144,7 @@ for img_path in glob.glob('inputs/*.jpg'):
         scanned_img = scan(img)
 
         # cv2.imshow("scanner", scanned_img)
-        cv2.imwrite('grabcutop/'+img_path.split('/')[-1], scanned_img)
+        cv2.imwrite('grabcutop/' + img_path.split('/')[-1], scanned_img)
         print("scanned")
 
         key = cv2.waitKey(0)
