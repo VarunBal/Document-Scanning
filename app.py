@@ -102,7 +102,6 @@ def scan(img):
 
     destination_corners = find_dest(corners)
 
-    h, w = orig_img.shape[:2]
     # Getting the homography.
     M = cv2.getPerspectiveTransform(np.float32(corners), np.float32(destination_corners))
     # Perspective transform using homography.
