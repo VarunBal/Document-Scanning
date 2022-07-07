@@ -1,6 +1,6 @@
-# Document allignment
+# Document Scanning
 
-## Document_alignment
+## Document_scanning
 
 This notebook will teach you about:
 * Morphology
@@ -10,7 +10,7 @@ This notebook will teach you about:
 * Homography
 * Perspective Transform
 
-You will learn to perform document alignment using the above techniques.
+You will learn to perform document scanning using the above techniques.
 
 ### Input
 
@@ -18,10 +18,5 @@ You will learn to perform document alignment using the above techniques.
 
 ### Output:
 
-
 <img src = 'grabcutop/aligned.jpg'>
 
-
-## Document_alignment_with reference.ipynb
-
-### Refer Master Branch 
